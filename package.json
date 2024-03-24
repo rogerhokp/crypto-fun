@@ -1,0 +1,19 @@
+{
+  "name": "crypto-fun",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@types/big.js": "^6.2.2",
+    "@types/lodash": "^4.14.202",
+    "big.js": "^6.2.1",
+    "colors": "^1.4.0",
+    "lodash": "^4.17.21",
+    "winston": "^3.12.0",
+    "ws": "^8.16.0"
+  }
+}
