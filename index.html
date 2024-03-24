@@ -33,16 +33,19 @@
                 const koBtcPrice = upBitLatestPrice['BTC'];
                 const hkBtcPrice = hashKeyLatestPrice['BTC'];
 
+                msg = ''
                 if (koBtcPrice > 0 && hkBtcPrice > 0) {
-                    messageDom.innerText = `[${new Date().toISOString()}] BTC - ${koBtcPrice} vs ${hkBtcPrice} USD / ${Math.abs(koBtcPrice - hkBtcPrice) / Math.min(koBtcPrice, hkBtcPrice) * 100}%`;
+                    msg += `[${new Date().toISOString()}] BTC - ${koBtcPrice} vs ${hkBtcPrice} USD / ${Math.abs(koBtcPrice - hkBtcPrice) / Math.min(koBtcPrice, hkBtcPrice) * 100}%`;
                 }
 
+                msg += '\n';
                 const koEthPrice = upBitLatestPrice['ETH'];
                 const hkEthPrice = hashKeyLatestPrice['ETH'];
                 if (koEthPrice > 0 && hkEthPrice > 0) {
-                    messageDom.innerText = `[${new Date().toISOString()}] ETH - ${koEthPrice} vs ${hkEthPrice} USD / ${Math.abs(koEthPrice - hkEthPrice) / Math.min(koEthPrice, hkEthPrice) * 100}%`;
+                    msg += `[${new Date().toISOString()}] ETH - ${koEthPrice} vs ${hkEthPrice} USD / ${Math.abs(koEthPrice - hkEthPrice) / Math.min(koEthPrice, hkEthPrice) * 100}%`;
                 }
 
+                messageDom.innerText = msg;
             }
 
 
@@ -95,7 +98,7 @@
             hashKeyWs.onopen = function() {
                 console.debug('HK Connected');
                 hashKeyWs.send(JSON.stringify({
-                    "symbol": "BTCHKD",
+                    "symbol": "BTCUSD",
                     "topic": "trade",
                     "event": "sub",
                     "params": {
@@ -105,7 +108,7 @@
                 }))
 
                 hashKeyWs.send(JSON.stringify({
-                    "symbol": "ETHHKD",
+                    "symbol": "ETHUSD",
                     "topic": "trade",
                     "event": "sub",
                     "params": {
@@ -132,10 +135,10 @@
                         let avgPrice = new Big(_.sum(tradePayload.data.map(trade => parseFloat(trade.p)))).div(tradePayload.data.length).toNumber();
                         // let latestTs = _.maxBy(tradePayload.data, trade => trade.t)?.t || 0;
                         if (symbol.includes('BTC')) {
-                            hashKeyLatestPrice.BTC = Xe.converHKDToUSD(avgPrice);
+                            hashKeyLatestPrice.BTC = avgPrice;
                             document.getElementById('hk-btc').innerText = `${new Date().toISOString()} Symbol: ${symbol}, USD ${avgPrice}`;
                         } else if (symbol.includes('ETH')) {
-                            hashKeyLatestPrice.ETH = Xe.converHKDToUSD(avgPrice);
+                            hashKeyLatestPrice.ETH = avgPrice;
                             document.getElementById('hk-eth').innerText = `${new Date().toISOString()} Symbol: ${symbol}, USD ${avgPrice}`;
                         }
 
