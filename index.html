@@ -98,7 +98,7 @@
             hashKeyWs.onopen = function() {
                 console.debug('HK Connected');
                 hashKeyWs.send(JSON.stringify({
-                    "symbol": "BTCUSD",
+                    "symbol": "BTCHKD",
                     "topic": "trade",
                     "event": "sub",
                     "params": {
@@ -108,7 +108,7 @@
                 }))
 
                 hashKeyWs.send(JSON.stringify({
-                    "symbol": "ETHUSD",
+                    "symbol": "ETHHKD",
                     "topic": "trade",
                     "event": "sub",
                     "params": {
@@ -135,11 +135,11 @@
                         let avgPrice = new Big(_.sum(tradePayload.data.map(trade => parseFloat(trade.p)))).div(tradePayload.data.length).toNumber();
                         // let latestTs = _.maxBy(tradePayload.data, trade => trade.t)?.t || 0;
                         if (symbol.includes('BTC')) {
-                            hashKeyLatestPrice.BTC = avgPrice;
-                            document.getElementById('hk-btc').innerText = `${new Date().toISOString()} Symbol: ${symbol}, USD ${avgPrice}`;
+                            hashKeyLatestPrice.BTC = Xe.converHKDToUSD(avgPrice);
+                            document.getElementById('hk-btc').innerText = `${new Date().toISOString()} Symbol: ${symbol}, USD ${hashKeyLatestPrice.BTC}`;
                         } else if (symbol.includes('ETH')) {
-                            hashKeyLatestPrice.ETH = avgPrice;
-                            document.getElementById('hk-eth').innerText = `${new Date().toISOString()} Symbol: ${symbol}, USD ${avgPrice}`;
+                            hashKeyLatestPrice.ETH = Xe.converHKDToUSD(avgPrice);
+                            document.getElementById('hk-eth').innerText = `${new Date().toISOString()} Symbol: ${symbol}, USD ${ hashKeyLatestPrice.ETH}`;
                         }
 
 
