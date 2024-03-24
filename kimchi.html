@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Kimchi Page</title>
+    <script src='https://cdn.jsdelivr.net/npm/big.js@6.2.1/big.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"
+        integrity="sha256-qXBd/EfAdjOA2FGrGAG+b3YBn2tn5A6bhz+LSgYD96k=" crossorigin="anonymous"></script>
+    <script>
+        window.onload = function() {
+            console.debug('Page loaded');
+
+            const hashKeyLatestPrice = {
+                'BTC': 0,
+                'ETH': 0,
+            }
+            const upBitLatestPrice = {
+                'BTC': 0,
+                'ETH': 0,
+            }
+
+            const Xe = {
+                converHKDToUSD: (hkd) => {
+                    return new Big(hkd).mul(0.13).toNumber();
+                },
+                converKRWToUSD: (krw) => {
+                    return new Big(krw).mul(0.00074).toNumber();
+                }
+            }
+
+            const messageDom = document.getElementById('message');
+            const printDiff = () => {
+                const koBtcPrice = upBitLatestPrice['BTC'];
+                const hkBtcPrice = hashKeyLatestPrice['BTC'];
+
+                if (koBtcPrice > 0 && hkBtcPrice > 0) {
+                    messageDom.innerText = `[${new Date().toISOString()}] BTC - ${koBtcPrice} vs ${hkBtcPrice} USD / ${Math.abs(koBtcPrice - hkBtcPrice) / Math.min(koBtcPrice, hkBtcPrice) * 100}%`;
+                }
+
+                const koEthPrice = upBitLatestPrice['ETH'];
+                const hkEthPrice = hashKeyLatestPrice['ETH'];
+                if (koEthPrice > 0 && hkEthPrice > 0) {
+                    messageDom.innerText = `[${new Date().toISOString()}] ETH - ${koEthPrice} vs ${hkEthPrice} USD / ${Math.abs(koEthPrice - hkEthPrice) / Math.min(koEthPrice, hkEthPrice) * 100}%`;
+                }
+
+            }
+
+
+
+            const hashKeyWs = new WebSocket('wss://stream-pro.hashkey.com/quote/ws/v1');
+            const upBitWs = new WebSocket('wss://api.upbit.com/websocket/v1');
+
+            upBitWs.onopen = function() {
+
+                messageDom.innerText += 'KO Connected';
+                upBitWs.send(JSON.stringify([
+                    {
+                        "ticket": "test example"
+                    },
+                    {
+                        "type": "trade",
+                        "codes": [
+                            "KRW-BTC",
+                            "KRW-ETH"
+                        ]
+                    },
+                    {
+                        "format": "DEFAULT"
+                    }
+                ]
+                ))
+
+                upBitWs.onmessage = function(data) {
+                    data.data.text().then(text => {
+
+                        const payload = JSON.parse(text);
+                        console.log('KO Received:', JSON.stringify(payload, null, 2));
+
+                        const code = payload.code.split('-')[1] + '';
+                        const tradePrice = Xe.converKRWToUSD(Number(payload.trade_price));
+                        upBitLatestPrice[code] = tradePrice;
+                        if (code === 'BTC') {
+                            document.getElementById('ko-btc').innerText = `${new Date().toISOString()} Symbol: ${code}, Price: USD ${tradePrice}`;
+                        } else if (code === 'ETH') {
+                            document.getElementById('ko-eth').innerText = `${new Date().toISOString()} ymbol: ${code}, Price: USD ${tradePrice}`;
+                        }
+                        printDiff();
+                    });
+
+
+                }
+
+
+            }
+            hashKeyWs.onopen = function() {
+                console.debug('HK Connected');
+                hashKeyWs.send(JSON.stringify({
+                    "symbol": "BTCHKD",
+                    "topic": "trade",
+                    "event": "sub",
+                    "params": {
+                        "binary": false
+                    },
+                    "id": 1
+                }))
+
+                hashKeyWs.send(JSON.stringify({
+                    "symbol": "ETHHKD",
+                    "topic": "trade",
+                    "event": "sub",
+                    "params": {
+                        "binary": false
+                    },
+                    "id": 1
+                }))
+
+                setInterval(() => {
+                    hashKeyWs.send(JSON.stringify({
+                        "ping": Date.now()
+                    }))
+                }, 10 * 1000)
+
+                hashKeyWs.onmessage = function(data) {
+                    const payload = JSON.parse(data.data);
+                    console.debug('HK Received:', payload)
+
+                    if (payload.topic == 'trade' && payload.sendTime && payload.data && payload.data.length > 0) {
+                        // console.debug(`Received from server @ ${new Date(payload.sendTime).toISOString()}`);
+                        const tradePayload = payload;
+
+                        const symbol = tradePayload.symbol;
+                        let avgPrice = new Big(_.sum(tradePayload.data.map(trade => parseFloat(trade.p)))).div(tradePayload.data.length).toNumber();
+                        // let latestTs = _.maxBy(tradePayload.data, trade => trade.t)?.t || 0;
+                        if (symbol.includes('BTC')) {
+                            hashKeyLatestPrice.BTC = Xe.converHKDToUSD(avgPrice);
+                            document.getElementById('hk-btc').innerText = `${new Date().toISOString()} Symbol: ${symbol}, USD ${avgPrice}`;
+                        } else if (symbol.includes('ETH')) {
+                            hashKeyLatestPrice.ETH = Xe.converHKDToUSD(avgPrice);
+                            document.getElementById('hk-eth').innerText = `${new Date().toISOString()} Symbol: ${symbol}, USD ${avgPrice}`;
+                        }
+
+
+                        console.debug(`HK: Symbol: ${symbol}, Average Price: USD ${avgPrice}`);
+                        printDiff();
+                    }
+                };
+
+
+                messageDom.innerText += 'HK Connected';
+
+
+            };
+
+
+            window.onbeforeunload = function() {
+                hashKeyWs.close();
+                upBitWs.close();
+            };
+        }
+    </script>
+</head>
+
+<body>
+    <p id="message"></p>
+
+    <p>🇭🇰</p>
+    <p id="hk-eth"></p>
+    <p id="hk-btc"></p>
+
+    <p>🇰🇵</p>
+    <p id="ko-eth"></p>
+    <p id="ko-btc"></p>
+
+    <!-- Your content goes here -->
+
+</body>
+
+</html>
