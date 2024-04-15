@@ -1,7 +1,7 @@
 
 import { Candlestick } from './type';
 import { fetchCandlestickData } from './market-data';
-import { analyzeWeeklyTrend } from './trend-analyzer';
+import { analyzeTrend } from './trend-analyzer';
 
 
 
@@ -47,7 +47,7 @@ describe('run', () => {
 
             const candles = await fetchCandlestickData(d.symbol, d.interval, d.startTime, d.endTime);
             // console.log(JSON.stringify(candles, null, 2))
-            const result = analyzeWeeklyTrend(candles);
+            const result = analyzeTrend(candles);
             expect(result.direction).toBe(d.expected);
         }
 

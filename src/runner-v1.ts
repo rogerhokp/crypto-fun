@@ -1,7 +1,7 @@
 
 import { Candlestick } from './type';
 import { fetchCandlestickData } from './market-data';
-import { analyzeWeeklyTrend } from './trend-analyzer';
+import { analyzeTrend } from './trend-analyzer';
 import Color from 'colors';
 import moment from 'moment';
 import _ from 'lodash';
@@ -37,7 +37,7 @@ const targets = [
             const expectedUpwardDate = now.clone().subtract(daysCountAsUpward, 'days').startOf('day');
             // console.log(`Analyzing ${daysCountAsUpward} days as upward from ${expectedUpwardDate.format('YYYY-MM-DD')}...`);
             const candles = await fetchCandlestickData(target.symbol, '1d', expectedUpwardDate.toDate().getTime(), now.clone().toDate().getTime());
-            const result = analyzeWeeklyTrend(candles, target.precentCountAsUpward);
+            const result = analyzeTrend(candles, target.precentCountAsUpward);
             if (result.direction === 'upward' && result.percentage > largestUpwardPrecentage) {
                 upwardStartDate = expectedUpwardDate;
                 upwardFoundResult = result;
@@ -64,7 +64,7 @@ const targets = [
             // console.log(`Analyzing ${dayBackward} days from ${moment(startTime).format('YYYY-MM-DD')} to ${moment(endTime).format('YYYY-MM-DD')}...`);
 
             const candles = await fetchCandlestickData(target.symbol, '1d', startTime, endTime);
-            const result = analyzeWeeklyTrend(candles);
+            const result = analyzeTrend(candles);
             if (result.direction === 'downward' && result.percentage > largestDropPrecentage) {
                 foundResult = result;
                 earliestDate = moment(startTime);
