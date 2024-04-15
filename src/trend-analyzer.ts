@@ -14,7 +14,7 @@ export function analyzeWeeklyTrend(candles: Candlestick[], totalPercentageChange
   });
 
   const totalPercentageChanged = Math.abs(actTotalPercentageChange);
-  console.log(`Total percentage changed: ${totalPercentageChanged}`)
+  // console.log(`Total percentage changed: ${totalPercentageChanged}`)
   if (totalPercentageChanged > totalPercentageChangeTolerance && actTotalPercentageChange > 0) {
     return { direction: 'upward', percentage: totalPercentageChanged };
   } else if (totalPercentageChanged > totalPercentageChangeTolerance && actTotalPercentageChange < 0) {
