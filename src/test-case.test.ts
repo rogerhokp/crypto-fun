@@ -31,6 +31,12 @@ const data = [
         startTime: new Date('2024-02-13').getTime(),
         endTime: new Date('2024-02-23').getTime(),
         expected: 'neutral',
+    }, {
+        symbol: 'BTCUSDT',
+        interval: '1d',
+        startTime: new Date('2024-01-09').getTime(),
+        endTime: new Date('2024-01-23').getTime(),
+        expected: 'downward',
     }
 
 ]
@@ -42,7 +48,7 @@ describe('run', () => {
             const candles = await fetchCandlestickData(d.symbol, d.interval, d.startTime, d.endTime);
             // console.log(JSON.stringify(candles, null, 2))
             const result = analyzeWeeklyTrend(candles);
-            expect(result).toBe(d.expected);
+            expect(result.direction).toBe(d.expected);
         }
 
     });
