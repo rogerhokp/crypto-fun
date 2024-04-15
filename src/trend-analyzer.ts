@@ -3,7 +3,7 @@ import { Candlestick } from './type';
 
 
 
-export function analyzeWeeklyTrend(candles: Candlestick[], totalPercentageChangeTolerance: number = 5): string {
+export function analyzeWeeklyTrend(candles: Candlestick[], totalPercentageChangeTolerance: number = 5): { direction: 'upward' | 'downward' | 'neutral', percentage: number } {
   let actTotalPercentageChange = 0;
 
   candles.forEach(candle => {
@@ -15,11 +15,11 @@ export function analyzeWeeklyTrend(candles: Candlestick[], totalPercentageChange
 
   const totalPercentageChanged = Math.abs(actTotalPercentageChange);
   if (totalPercentageChanged > totalPercentageChangeTolerance && actTotalPercentageChange > 0) {
-    return 'upward';
+    return { direction: 'upward', percentage: totalPercentageChanged };
   } else if (totalPercentageChanged > totalPercentageChangeTolerance && actTotalPercentageChange < 0) {
-    return 'downward';
+    return { direction: 'downward', percentage: totalPercentageChanged };
   } else {
-    return 'neutral';
+    return { direction: 'neutral', percentage: totalPercentageChanged };
   }
 }
 
