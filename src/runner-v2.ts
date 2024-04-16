@@ -7,28 +7,54 @@ import moment from 'moment';
 import _ from 'lodash';
 
 
-const targets = [
-    {
-        symbol: 'BTCUSDT',
-        maxDayToCheck: 30,
-        precentCountAsUpward: 2,
-        minDayInRightSide: 3,
-        minDayInLeftSide: 3,
-    }
-];
+// const targets = [
+//     {
+//         symbol: 'BTCUSDT',
+//         maxDayToCheck: 30,
+//         precentCountAsUpward: 2,
+//         minDayInRightSide: 3,
+//         minDayInLeftSide: 3,
+//     }
+// ];
+
+type DropReboundPeriod = {
+    leftSideStart: Date;
+    leftSideEnd: Date;
+    leftSideHighestPrice: Big;
+    rightSideStart: Date;
+    rightSideEnd: Date;
+    rightSideHighestPrice: Big;
+};
+
+export const run = async (symbol: string, maxDayToCheck: number, date?: string) => {
+    const targets = [
+        {
+            symbol: symbol.toLocaleUpperCase(),
+            maxDayToCheck: maxDayToCheck,
+            precentCountAsUpward: 2,
+            minDayInRightSide: 3,
+            minDayInLeftSide: 3,
+        }
+    ];
 
 
-(async () => {
 
     // const now = moment();
-    const now = moment('2024-04-08');
+    const now = date ? moment(date) : moment();
+    if (!now.isValid()) {
+        throw new Error('Invalid date format');
+    }
 
     console.log(`Now is ${now.format('YYYY-MM-DD HH:mm:ss')}`);
-
+    const dropReboundPeriods: DropReboundPeriod[] = [];
     for (const target of targets) {
 
         console.log(`Analyzing ${target.symbol}...`);
         const allCandlesticks = await fetchCandlestickData(target.symbol, '1d', now.clone().subtract(target.maxDayToCheck, 'd').toDate().getTime(), now.clone().add(1, 'd').toDate().getTime());
+        if (allCandlesticks.length === 0) {
+            console.log(`No data found for ${target.symbol}`);
+            return;
+        }
 
         // console.log(JSON.stringify(allCandlesticks, null, 2))
 
@@ -65,12 +91,23 @@ const targets = [
                             console.log(`Found Drop period from ${moment(leftCandlesticks[0].openTime).format('YYYY-MM-DD')} to ${moment(leftCandlesticks[leftCandlesticks.length - 1].openTime).format('YYYY-MM-DD')}`);
                             console.log(`Found Rebound period from ${moment(rightCandlesticks[0].openTime).format('YYYY-MM-DD')} to ${moment(rightCandlesticks[rightCandlesticks.length - 1].openTime).format('YYYY-MM-DD')}`);
                             console.log(`Found ${target.symbol} at ${rightSideHighestPrice.highPrice}@${moment(rightSideHighestPrice.openTime).format('YYYY-MM-DD')} 📈 ${leftSideHighestPrice.highPrice}@${moment(leftSideHighestPrice.openTime).format('YYYY-MM-DD')}`);
+
+
+
+
+                            dropReboundPeriods.push({
+                                leftSideStart: leftCandlesticks[0].openTime,
+                                leftSideEnd: leftCandlesticks[leftCandlesticks.length - 1].openTime,
+                                leftSideHighestPrice: leftSideHighestPrice.highPrice,
+                                rightSideStart: rightCandlesticks[0].openTime,
+                                rightSideEnd: rightCandlesticks[rightCandlesticks.length - 1].openTime,
+                                rightSideHighestPrice: rightSideHighestPrice.highPrice,
+                            });
+                            console.log('Type generated successfully.');
                         }
                     }
                 }
 
-
-            } else {
 
             }
 
@@ -79,7 +116,7 @@ const targets = [
 
 
     }
+    return dropReboundPeriods;
+};
 
 
-
-})()
