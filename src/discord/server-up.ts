@@ -136,15 +136,11 @@ cron.schedule('0 9,12,18 * * *', async () => {
             for (const r of reuslt) {
                 const leftSideDays = moment(r.leftSideEnd).diff(moment(r.leftSideStart), 'days');
                 const rightSideDays = moment(r.rightSideEnd).diff(moment(r.rightSideStart), 'days');
-                await thread.send(
-                    `😡 由__${dateFormater(r.leftSideStart)}__至__${dateFormater(r.leftSideEnd)}__跌
-    最高價格為__${r.leftSideHighestPrice}__
-    最低價格為__${r.leftSideLowestPrice}__
-由__${dateFormater(r.rightSideStart)}__至__${dateFormater(r.rightSideEnd)}__
-    回升至__${r.rightSideHighestPrice}__
 
-左側共__${leftSideDays}__天 右側共__${rightSideDays}__天 
-共__${leftSideDays + rightSideDays}__天
+                await thread.send(
+`__${dateFormater(r.leftSideStart)}__:__${dateFormater(r.leftSideEnd)}__ （${leftSideDays})天
+    💵 __${r.leftSideHighestPrice}__ 跌到 __${r.leftSideLowestPrice}_--
+    _${dateFormater(r.rightSideEnd)}__ 之後反彈 💵到__${r.rightSideHighestPrice}_-- (${rightSideDays})天
 `);
             }
 
