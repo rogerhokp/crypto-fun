@@ -106,7 +106,7 @@ const cronJobConfig = [
     { symbol: 'BTCUSDT', maxDayToCheck: 30 },
     { symbol: 'ETHUSDT', maxDayToCheck: 30 },
 ]
-cron.schedule('0 9,12,18 * * *', async () => {
+cron.schedule('0 9,12,18,23 * * *', async () => {
 
     console.log('running a task every day at 9am, 12pm and 6pm');
 
