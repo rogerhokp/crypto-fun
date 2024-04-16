@@ -21,6 +21,7 @@ type DropReboundPeriod = {
     leftSideStart: Date;
     leftSideEnd: Date;
     leftSideHighestPrice: Big;
+    leftSideLowestPrice: Big;
     rightSideStart: Date;
     rightSideEnd: Date;
     rightSideHighestPrice: Big;
@@ -86,6 +87,10 @@ export const run = async (symbol: string, maxDayToCheck: number, date?: string) 
                         if (!leftSideHighestPrice) {
                             throw new Error('Cannot find the lowest price in the left candlesticks.');
                         }
+                        const leftSideLowestPrice = _.minBy(leftCandlesticks, c => c.lowPrice);
+                        if (!leftSideLowestPrice) {
+                            throw new Error('Cannot find the lowest price in the left candlesticks.');
+                        }
                         if (rightSideHighestPrice.highPrice > leftSideHighestPrice.highPrice) {
                             console.log('------------------------------------')
                             console.log(`Found Drop period from ${moment(leftCandlesticks[0].openTime).format('YYYY-MM-DD')} to ${moment(leftCandlesticks[leftCandlesticks.length - 1].openTime).format('YYYY-MM-DD')}`);
@@ -94,11 +99,11 @@ export const run = async (symbol: string, maxDayToCheck: number, date?: string) 
 
 
 
-
                             dropReboundPeriods.push({
                                 leftSideStart: leftCandlesticks[0].openTime,
                                 leftSideEnd: leftCandlesticks[leftCandlesticks.length - 1].openTime,
                                 leftSideHighestPrice: leftSideHighestPrice.highPrice,
+                                leftSideLowestPrice: leftSideLowestPrice.lowPrice,
                                 rightSideStart: rightCandlesticks[0].openTime,
                                 rightSideEnd: rightCandlesticks[rightCandlesticks.length - 1].openTime,
                                 rightSideHighestPrice: rightSideHighestPrice.highPrice,

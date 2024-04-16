@@ -45,30 +45,44 @@ discordClient.on('interactionCreate', async (interaction) => {
     }
 
 
-    const symbol = interaction.options.get('symbol')?.value as string;
+    let symbol = interaction.options.get('symbol')?.value as string;
     const maxDayToCheck = interaction.options.get('window')?.value as number;
-    const date = interaction.options.get('date')?.value as string;
+    let date = interaction.options.get('date')?.value as string || undefined;
     if (!symbol || !maxDayToCheck) {
         await interaction.reply('Please provide both symbol and window');
         return;
     }
 
     try {
+        if(!symbol.toUpperCase().includes('USDT')){
+            symbol = symbol + 'USDT';
+        }
+        if(!date){
+            date = moment().format('YYYY-MM-DD');
+        }
         const reuslt = await run(symbol, maxDayToCheck, date);
         await interaction.reply(`processing ${symbol} with ${maxDayToCheck} days window at ${date}`);
         if (reuslt?.length) {
             const channel = interaction.channel;
 
             const thread = await (channel as TextChannel).threads.create({
-                name: `${symbol} @ ${maxDayToCheck} / ${date}d `,
+                name: `${symbol} @ ${maxDayToCheck}d / ${date} `,
                 autoArchiveDuration: 4320,
             })
             for (const r of reuslt) {
-                await thread.send(`由__${dateFormater(r.leftSideStart)}__至__${dateFormater(r.leftSideEnd)}__跌，最高價格為__${r.leftSideHighestPrice}__，由__${dateFormater(r.rightSideStart)}__至__${dateFormater(r.rightSideEnd)}__回升至__${r.rightSideHighestPrice}__`);
+                const leftSideDays = moment(r.leftSideEnd).diff(moment(r.leftSideStart), 'days');
+                const rightSideDays = moment(r.rightSideEnd).diff(moment(r.rightSideStart), 'days');
+                await thread.send(
+`😡 由__${dateFormater(r.leftSideStart)}__至__${dateFormater(r.leftSideEnd)}__跌
+    最高價格為__${r.leftSideHighestPrice}__
+    最低價格為__${r.leftSideLowestPrice}__
+由__${dateFormater(r.rightSideStart)}__至__${dateFormater(r.rightSideEnd)}__
+    回升至__${r.rightSideHighestPrice}__
+
+左側共__${leftSideDays}__天 右側共__${rightSideDays}__天 
+共__${leftSideDays + rightSideDays}__天
+`);
             }
-            //    reuslt.forEach((r) => {
-            //     return `Left Side: ${r.leftSideStart} - ${r.leftSideEnd} Highest Price: ${r.leftSideHighestPrice} vs Right Side: ${r.rightSideStart} - ${r.rightSideEnd} Highest Price: ${r.rightSideHighestPrice}`
-            // })
 
             await interaction.editReply(`${symbol} with ${maxDayToCheck} days window at ${date} Found ${reuslt.length} records`);
         } else {

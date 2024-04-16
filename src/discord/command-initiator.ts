@@ -30,11 +30,11 @@ export async function createCommand() {
             .addStringOption(option =>
                 option.setName('symbol').setDescription('Crypto Symbol from binance').setRequired(true)
             )
-            .addStringOption(option =>
-                option.setName('date').setDescription('Date (YYYY-MM-DD)').setRequired(true)
-            )
             .addNumberOption(option => 
-                option.setName('window').setDescription('Max day to check').setRequired(true)
+                option.setName('window').setDescription('Max day to check').setRequired(true).setMaxValue(150)
+            )
+            .addStringOption(option =>
+                option.setName('date').setDescription('Date (YYYY-MM-DD)').setRequired(false)
             )
             
     ]
@@ -49,7 +49,5 @@ export async function createCommand() {
     } catch (error) {
         console.error(error)
     }
-
-
 
 }
