@@ -73,9 +73,9 @@ discordClient.on('interactionCreate', async (interaction) => {
                 const leftSideDays = moment(r.leftSideEnd).diff(moment(r.leftSideStart), 'days');
                 const rightSideDays = moment(r.rightSideEnd).diff(moment(r.rightSideStart), 'days');
                 await thread.send(
-`__${dateFormater(r.leftSideStart)}__:__${dateFormater(r.leftSideEnd)}__ （${leftSideDays})天
-    💵 __${r.leftSideHighestPrice}__ 跌到 __${r.leftSideLowestPrice}_--
-    _${dateFormater(r.rightSideEnd)}__ 之後反彈 💵到__${r.rightSideHighestPrice}_-- (${rightSideDays})天
+`**${dateFormater(r.leftSideStart)}**至**${dateFormater(r.leftSideEnd)}** （${leftSideDays})天
+    💵 **${r.leftSideHighestPrice}** 跌到 **${r.leftSideLowestPrice}**
+    _${dateFormater(r.rightSideEnd)}** 之後反彈到 💵 **${r.rightSideHighestPrice}** (${rightSideDays})天
 `);
             }
 
@@ -131,11 +131,10 @@ cron.schedule('0 9,12,18 * * *', async () => {
             for (const r of reuslt) {
                 const leftSideDays = moment(r.leftSideEnd).diff(moment(r.leftSideStart), 'days');
                 const rightSideDays = moment(r.rightSideEnd).diff(moment(r.rightSideStart), 'days');
-
                 await thread.send(
-`__${dateFormater(r.leftSideStart)}__:__${dateFormater(r.leftSideEnd)}__ （${leftSideDays})天
-    💵 __${r.leftSideHighestPrice}__ 跌到 __${r.leftSideLowestPrice}_--
-    _${dateFormater(r.rightSideEnd)}__ 之後反彈 💵到__${r.rightSideHighestPrice}_-- (${rightSideDays})天
+`**${dateFormater(r.leftSideStart)}**至**${dateFormater(r.leftSideEnd)}** （${leftSideDays})天
+    💵 **${r.leftSideHighestPrice}** 跌到 **${r.leftSideLowestPrice}**
+    _${dateFormater(r.rightSideEnd)}** 之後反彈到 💵 **${r.rightSideHighestPrice}** (${rightSideDays})天
 `);
             }
 
