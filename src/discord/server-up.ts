@@ -149,6 +149,7 @@ cron.schedule('0 9,12,18 * * *', async () => {
             }
 
         } else {
+            await textChannel.send(`${config.symbol} with ${config.maxDayToCheck} days window at ${moment().format('YYYY-MM-DD')} Found nothing`);
 
         }
 
