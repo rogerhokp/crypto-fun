@@ -69,14 +69,17 @@ discordClient.on('interactionCreate', async (interaction) => {
                 name: `${symbol} @ ${maxDayToCheck}d / ${date} `,
                 autoArchiveDuration: 4320,
             })
+            let idx = 1;
             for (const r of reuslt) {
                 const leftSideDays = moment(r.leftSideEnd).diff(moment(r.leftSideStart), 'days');
                 const rightSideDays = moment(r.rightSideEnd).diff(moment(r.rightSideStart), 'days');
                 await thread.send(
-`**${dateFormater(r.leftSideStart)}**至**${dateFormater(r.leftSideEnd)}** （${leftSideDays})天
+                    `${idx} : 
+**${dateFormater(r.leftSideStart)}**至**${dateFormater(r.leftSideEnd)}** （${leftSideDays})天
     💵 **${r.leftSideHighestPrice}** 跌到 **${r.leftSideLowestPrice}**
-    _${dateFormater(r.rightSideEnd)}** 之後反彈到 💵 **${r.rightSideHighestPrice}** (${rightSideDays})天
+    **${dateFormater(r.rightSideEnd)}** 之後反彈到 💵 **${r.rightSideHighestPrice}** (${rightSideDays})天
 `);
+                idx++;
             }
 
             await interaction.editReply(`${symbol} with ${maxDayToCheck} days window at ${date} Found ${reuslt.length} records`);
@@ -128,14 +131,17 @@ cron.schedule('0 9,12,18 * * *', async () => {
                 autoArchiveDuration: 1440,
             })
 
+            let idx = 1;
             for (const r of reuslt) {
                 const leftSideDays = moment(r.leftSideEnd).diff(moment(r.leftSideStart), 'days');
                 const rightSideDays = moment(r.rightSideEnd).diff(moment(r.rightSideStart), 'days');
                 await thread.send(
-`**${dateFormater(r.leftSideStart)}**至**${dateFormater(r.leftSideEnd)}** （${leftSideDays})天
+                    `${idx} : 
+**${dateFormater(r.leftSideStart)}**至**${dateFormater(r.leftSideEnd)}** （${leftSideDays})天
     💵 **${r.leftSideHighestPrice}** 跌到 **${r.leftSideLowestPrice}**
-    _${dateFormater(r.rightSideEnd)}** 之後反彈到 💵 **${r.rightSideHighestPrice}** (${rightSideDays})天
+    **${dateFormater(r.rightSideEnd)}** 之後反彈到 💵 **${r.rightSideHighestPrice}** (${rightSideDays})天
 `);
+                idx++;
             }
 
         } else {
