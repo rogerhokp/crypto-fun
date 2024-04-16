@@ -2,10 +2,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 import cron from 'node-cron';
 import _ from 'lodash';
-import { run as RunerV2 } from '../runner-v2';
+import { run as RunerV2, DropReboundPeriod } from '../runner-v2';
 import moment from 'moment';
 
-import { Client, GatewayIntentBits, TextChannel } from 'discord.js';
+import { Client, GatewayIntentBits, TextChannel, ThreadChannel } from 'discord.js';
 import * as CommandInitiator from './command-initiator';
 
 const discordClient = new Client({
@@ -66,21 +66,18 @@ discordClient.on('interactionCreate', async (interaction) => {
             const channel = interaction.channel;
 
             const thread = await (channel as TextChannel).threads.create({
-                name: `${symbol} @ ${maxDayToCheck}d / ${date} `,
-                autoArchiveDuration: 4320,
+                name: `${symbol} from ${moment(date).subtract(maxDayToCheck, 'd').format('YYYY-MM-DD')} to ${date}`,
             })
-            let idx = 1;
-            for (const r of reuslt) {
-                const leftSideDays = moment(r.leftSideEnd).diff(moment(r.leftSideStart), 'days');
-                const rightSideDays = moment(r.rightSideEnd).diff(moment(r.rightSideStart), 'days');
-                await thread.send(
-                    `${idx} : 
-**${dateFormater(r.leftSideStart)}**至**${dateFormater(r.leftSideEnd)}** （${leftSideDays})天
-    💵 **${r.leftSideHighestPrice}** 跌到 **${r.leftSideLowestPrice}**
-    **${dateFormater(r.rightSideEnd)}** 之後反彈到 💵 **${r.rightSideHighestPrice}** (${rightSideDays})天
-`);
-                idx++;
+
+            const smallestRight = _.minBy(reuslt, (o) => moment(o.rightSideEnd).diff(moment(o.rightSideStart), 'days'));
+            const largestLeft = _.maxBy(reuslt, (o) => moment(o.leftSideEnd).diff(moment(o.leftSideStart), 'days'));
+            const largestRange = _.maxBy(reuslt, (o) => moment(o.rightSideEnd).diff(moment(o.leftSideStart), 'days'));
+            if (!largestLeft || !smallestRight || !largestRange) {
+                await interaction.editReply(`Error in finding smallestRight or largestLeft`);
+                return;
             }
+
+            await sendResultToThread([smallestRight, largestLeft, largestRange], thread);
 
             await interaction.editReply(`${symbol} with ${maxDayToCheck} days window at ${date} Found ${reuslt.length} records`);
         } else {
@@ -127,26 +124,21 @@ cron.schedule('0 9,12,18 * * *', async () => {
         if (reuslt?.length) {
             //create thread
             const thread = await textChannel.threads.create({
-                name: `${config.symbol} in ${config.maxDayToCheck}d @ ${moment().format('YYYY-MM-DD')}`,
-                autoArchiveDuration: 1440,
+                name: `${config.symbol} from ${moment().subtract(config.maxDayToCheck, 'd').format('YYYY-MM-DD')} to ${moment().format('YYYY-MM-DD')}`,
             })
 
-            let idx = 1;
-            for (const r of reuslt) {
-                const leftSideDays = moment(r.leftSideEnd).diff(moment(r.leftSideStart), 'days');
-                const rightSideDays = moment(r.rightSideEnd).diff(moment(r.rightSideStart), 'days');
-                await thread.send(
-                    `${idx} : 
-**${dateFormater(r.leftSideStart)}**至**${dateFormater(r.leftSideEnd)}** （${leftSideDays})天
-    💵 **${r.leftSideHighestPrice}** 跌到 **${r.leftSideLowestPrice}**
-    **${dateFormater(r.rightSideEnd)}** 之後反彈到 💵 **${r.rightSideHighestPrice}** (${rightSideDays})天
-`);
-                idx++;
+            const smallestRight = _.minBy(reuslt, (o) => moment(o.rightSideEnd).diff(moment(o.rightSideStart), 'days'));
+            const largestLeft = _.maxBy(reuslt, (o) => moment(o.leftSideEnd).diff(moment(o.leftSideStart), 'days'));
+            const largestRange = _.maxBy(reuslt, (o) => moment(o.rightSideEnd).diff(moment(o.leftSideStart), 'days'));
+            if (!largestLeft || !smallestRight || !largestRange) {
+                await textChannel.send(`Error in finding smallestRight or largestLeft`);
+                return;
             }
 
+            
+            sendResultToThread([smallestRight, largestLeft, largestRange], thread);
         } else {
             await textChannel.send(`${config.symbol} with ${config.maxDayToCheck} days window at ${moment().format('YYYY-MM-DD')} Found nothing`);
-
         }
 
     }
@@ -157,3 +149,20 @@ cron.schedule('0 9,12,18 * * *', async () => {
     timezone: "asia/hong_kong"
 });
 console.log('Cron job is running');
+
+async function sendResultToThread(reuslt: DropReboundPeriod[], thread: ThreadChannel) {
+    let idx = 1;
+
+    for (const r of _.uniqBy(reuslt, (o) => `${o.leftSideStart.getTime()}-${o.leftSideEnd.getTime()}-${o.rightSideStart.getTime()}-${o.rightSideEnd.getTime()}`)) {
+        const leftSideDays = moment(r.leftSideEnd).diff(moment(r.leftSideStart), 'days');
+        const rightSideDays = moment(r.rightSideEnd).diff(moment(r.rightSideStart), 'days');
+        await thread.send(
+            `${idx} : 
+** ${dateFormater(r.leftSideStart)
+            }** 至 ** ${dateFormater(r.leftSideEnd)}** （${leftSideDays}) 天
+    💵** ${r.leftSideHighestPrice}** 跌到 💵** ${r.leftSideLowestPrice}**
+    之反彈到 ** ${dateFormater(r.rightSideEnd)}** 💵** ${r.rightSideHighestPrice}** (${rightSideDays}) 天
+        `);
+        idx++;
+    }
+}

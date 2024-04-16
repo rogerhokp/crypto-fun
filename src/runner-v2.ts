@@ -17,7 +17,7 @@ import _ from 'lodash';
 //     }
 // ];
 
-type DropReboundPeriod = {
+export type DropReboundPeriod = {
     leftSideStart: Date;
     leftSideEnd: Date;
     leftSideHighestPrice: Big;
