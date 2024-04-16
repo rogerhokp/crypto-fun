@@ -106,42 +106,47 @@ const cronJobConfig = [
     { symbol: 'BTCUSDT', maxDayToCheck: 30 },
     { symbol: 'ETHUSDT', maxDayToCheck: 30 },
 ]
-cron.schedule('0 9,12,18,23 * * *', async () => {
+cron.schedule('0 9,12,18,23 * * *', () => {
+    (async () => {
 
-    console.log('running a task every day at 9am, 12pm and 6pm');
+        console.log('running a task every day at 9am, 12pm and 6pm');
 
-    const channel = await discordClient.channels.fetch(`${process.env.DISCORD_CRYPTO_CHANNEL_ID}`)
-    if (!channel) {
-        console.error('Channel not found');
-        return;
-    }
-    const textChannel = channel as TextChannel;
-
-    for (const config of cronJobConfig) {
-
-        const reuslt = await RunerV2(config.symbol, config.maxDayToCheck);
-
-        if (reuslt?.length) {
-            //create thread
-            const thread = await textChannel.threads.create({
-                name: `${config.symbol} from ${moment().subtract(config.maxDayToCheck, 'd').format('YYYY-MM-DD')} to ${moment().format('YYYY-MM-DD')}`,
-            })
-
-            const smallestRight = _.minBy(reuslt, (o) => moment(o.rightSideEnd).diff(moment(o.rightSideStart), 'days'));
-            const largestLeft = _.maxBy(reuslt, (o) => moment(o.leftSideEnd).diff(moment(o.leftSideStart), 'days'));
-            const largestRange = _.maxBy(reuslt, (o) => moment(o.rightSideEnd).diff(moment(o.leftSideStart), 'days'));
-            if (!largestLeft || !smallestRight || !largestRange) {
-                await textChannel.send(`Error in finding smallestRight or largestLeft`);
-                return;
-            }
-
-            
-            sendResultToThread([smallestRight, largestLeft, largestRange], thread);
-        } else {
-            await textChannel.send(`${config.symbol} with ${config.maxDayToCheck} days window at ${moment().format('YYYY-MM-DD')} Found nothing`);
+        const channel = await discordClient.channels.fetch(`${process.env.DISCORD_CRYPTO_CHANNEL_ID}`)
+        if (!channel) {
+            console.error('Channel not found');
+            return;
         }
+        const textChannel = channel as TextChannel;
 
-    }
+        console.log('channel found');
+        for (const config of cronJobConfig) {
+
+            console.log(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment().format('YYYY-MM-DD')}`);
+            const reuslt = await RunerV2(config.symbol, config.maxDayToCheck);
+
+            if (reuslt?.length) {
+                //create thread
+                const thread = await textChannel.threads.create({
+                    name: `${config.symbol} from ${moment().subtract(config.maxDayToCheck, 'd').format('YYYY-MM-DD')} to ${moment().format('YYYY-MM-DD')}`,
+                })
+
+                const smallestRight = _.minBy(reuslt, (o) => moment(o.rightSideEnd).diff(moment(o.rightSideStart), 'days'));
+                const largestLeft = _.maxBy(reuslt, (o) => moment(o.leftSideEnd).diff(moment(o.leftSideStart), 'days'));
+                const largestRange = _.maxBy(reuslt, (o) => moment(o.rightSideEnd).diff(moment(o.leftSideStart), 'days'));
+                if (!largestLeft || !smallestRight || !largestRange) {
+                    await textChannel.send(`Error in finding smallestRight or largestLeft`);
+                    return;
+                }
+
+
+                sendResultToThread([smallestRight, largestLeft, largestRange], thread);
+            } else {
+                await textChannel.send(`${config.symbol} with ${config.maxDayToCheck} days window at ${moment().format('YYYY-MM-DD')} Found nothing`);
+            }
+            console.log(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment().format('YYYY-MM-DD')} done`);
+
+        }
+    })();
 
 
 }, {
