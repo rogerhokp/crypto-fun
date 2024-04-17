@@ -76,8 +76,11 @@ export const run = async (symbol: string, maxDayToCheck: number, date?: string) 
                 }
 
                 const allLeftCandlesticks = allCandlesticks.slice(0, -dayToBackward);
-                for (const dayToBackwardForLeftCandlesticks of _.range(target.minDayInLeftSide, target.maxDayToCheck + 1)) {
+                for (const dayToBackwardForLeftCandlesticks of _.range(0, target.maxDayToCheck + 1)) {
                     const leftCandlesticks = allLeftCandlesticks.slice(-dayToBackwardForLeftCandlesticks);
+                    if (leftCandlesticks.length < target.minDayInLeftSide) {
+                        continue;
+                    }
                     const leftTrend = analyzeTrend(leftCandlesticks);
                     // console.log()
                     // console.log(`Day ${dayToBackwardForLeftCandlesticks} - Left trend: ${leftTrend.direction} - ${leftTrend.percentage}%`);
