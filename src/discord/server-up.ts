@@ -105,6 +105,8 @@ discordClient.login(`${process.env.DISCORD_BOT_TOKEN}`);
 const cronJobConfig = [
     { symbol: 'BTCUSDT', maxDayToCheck: 30 },
     { symbol: 'ETHUSDT', maxDayToCheck: 30 },
+    { symbol: 'BTCUSDT', maxDayToCheck: 90 },
+    { symbol: 'ETHUSDT', maxDayToCheck: 90 },
 ]
 //'0 9,12,18,21 * * *'
 //run every 2 min
