@@ -93,7 +93,7 @@ export const run = async (symbol: string, maxDayToCheck: number, settlementDate:
             const settlementPrice = rightSideLast.highPrice;//not close price, ha
 
             const allLeftCandlesticks = allCandlesticks.slice(0, -dayToBackward);
-            const leftDaysAdded: { [dayBackward: number]: true | undefined } = {};
+            // const leftDaysAdded: { [dayBackward: number]: true | undefined } = {};
             for (const dayToBackwardForLeftCandlesticks of _.range(target.maxDayToCheck + 1, 0)) {
                 const leftCandlesticks = allLeftCandlesticks.slice(-dayToBackwardForLeftCandlesticks);
                 if (leftCandlesticks.length < target.minDayInLeftSide) {
@@ -105,15 +105,15 @@ export const run = async (symbol: string, maxDayToCheck: number, settlementDate:
 
                 if (leftTrend.direction === 'downward') {
 
-                    leftDaysAdded[dayToBackwardForLeftCandlesticks] = true;
+                    // leftDaysAdded[dayToBackwardForLeftCandlesticks] = true;
                     // const isFirstCandDownward = leftCandlesticks[0].closePrice < leftCandlesticks[0].openPrice;
                     // if(!isFirstCandDownward){
                     //     continue;
                     // }
-                    const prevDateExists = leftDaysAdded[dayToBackwardForLeftCandlesticks + 1];
-                    if (prevDateExists) {
-                        continue;
-                    }
+                    // const prevDateExists = leftDaysAdded[dayToBackwardForLeftCandlesticks + 1];
+                    // if (prevDateExists) {
+                    //     continue;
+                    // }
 
                     const leftSideHighestPrice = _.maxBy(leftCandlesticks, c => c.highPrice);
                     if (!leftSideHighestPrice) {
@@ -127,7 +127,7 @@ export const run = async (symbol: string, maxDayToCheck: number, settlementDate:
                     if ((isPrediction && settlementPrice.gte(rightCandlesticks[0].lowPrice)) ||
                         (!isPrediction && settlementPrice.gte(leftSideHighestPrice.highPrice))) {
 
-                        console.log('------------------------------------')
+                        console.log('---------------left---------------------')
                         console.log(`Found Drop period from ${moment.utc(leftCandlesticks[0].openTime).format('YYYY-MM-DD')} to ${moment.utc(leftCandlesticks[leftCandlesticks.length - 1].openTime).format('YYYY-MM-DD')}`);
                         console.log(`Found Rebound period from ${moment.utc(rightCandlesticks[0].openTime).format('YYYY-MM-DD')} to ${moment.utc(rightSideLast.openTime).format('YYYY-MM-DD')}`);
                         console.log(`Found ${target.symbol} at ${settlementPrice}@${moment.utc(rightSideLast.openTime).format('YYYY-MM-DD')} 📈 ${leftSideHighestPrice.highPrice}@${moment.utc(leftSideHighestPrice.openTime).format('YYYY-MM-DD')}`);
