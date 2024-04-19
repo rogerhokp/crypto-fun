@@ -22,7 +22,7 @@ const discordClient = new Client({
 
 discordClient.once('ready', () => {
 
-    CommandInitiator.createCommand();
+    // CommandInitiator.createCommand();
     console.log('Discord bot is ready!');
 });
 
@@ -68,16 +68,7 @@ discordClient.on('interactionCreate', async (interaction) => {
             const thread = await (channel as TextChannel).threads.create({
                 name: `${symbol} from ${moment.utc(date).subtract(maxDayToCheck, 'd').format('YYYY-MM-DD')} to ${date}`,
             })
-
-            const smallestRight = _.minBy(reuslt, (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.rightSideStart), 'days'));
-            const largestLeft = _.maxBy(reuslt, (o) => moment.utc(o.leftSideEnd).diff(moment.utc(o.leftSideStart), 'days'));
-            const largestRange = _.maxBy(reuslt, (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.leftSideStart), 'days'));
-            if (!largestLeft || !smallestRight || !largestRange) {
-                await interaction.editReply(`Error in finding smallestRight or largestLeft`);
-                return;
-            }
-
-            await sendResultToThread([smallestRight, largestLeft, largestRange], thread);
+            await sendResultToThread(reuslt, thread);
 
             await interaction.editReply(`${symbol} with ${maxDayToCheck} days window at ${date} Found ${reuslt.length} records`);
         } else {
@@ -103,10 +94,10 @@ discordClient.login(`${process.env.DISCORD_BOT_TOKEN}`);
 
 
 const cronJobConfig = [
-    { symbol: 'BTCUSDT', maxDayToCheck: 30 },
-    { symbol: 'ETHUSDT', maxDayToCheck: 30 },
-    { symbol: 'BTCUSDT', maxDayToCheck: 90 },
-    { symbol: 'ETHUSDT', maxDayToCheck: 90 },
+    // { symbol: 'BTCUSDT', maxDayToCheck: 30 },
+    // { symbol: 'ETHUSDT', maxDayToCheck: 30 },
+    { symbol: 'BTCUSDT', maxDayToCheck: 60 },
+    { symbol: 'ETHUSDT', maxDayToCheck: 60 },
 ]
 //'0 9,12,18,21 * * *'
 //run every 2 min
@@ -135,16 +126,7 @@ cron.schedule('0 */1 * * *', () => {
                     name: `${config.symbol} from ${moment.utc().subtract(config.maxDayToCheck, 'd').format('YYYY-MM-DD')} to ${moment.utc().format('YYYY-MM-DD')}`,
                 })
 
-                const smallestRight = _.minBy(reuslt, (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.rightSideStart), 'days'));
-                const largestLeft = _.maxBy(reuslt, (o) => moment.utc(o.leftSideEnd).diff(moment.utc(o.leftSideStart), 'days'));
-                const largestRange = _.maxBy(reuslt, (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.leftSideStart), 'days'));
-                if (!largestLeft || !smallestRight || !largestRange) {
-                    await textChannel.send(`Error in finding smallestRight or largestLeft`);
-                    return;
-                }
-
-
-                sendResultToThread([smallestRight, largestLeft, largestRange], thread);
+                sendResultToThread(reuslt, thread);
             } else {
                 await textChannel.send(`${config.symbol} with ${config.maxDayToCheck} days window at ${moment.utc().format('YYYY-MM-DD')} Found nothing`);
             }
@@ -160,16 +142,46 @@ cron.schedule('0 */1 * * *', () => {
 });
 console.log('Cron job is running');
 
-async function sendResultToThread(reuslt: DropReboundPeriod[], thread: ThreadChannel) {
-    let idx = 1;
+const ReasonTxtMap = {
+    'SMALLEST_RANGE': '最近的v型',
+    'LARGEST_RANGE': '最大的v型',
+} as { [reason: string]: string }
 
-    for (const r of _.uniqBy(reuslt, (o) => `${o.leftSideStart.getTime()}-${o.leftSideEnd.getTime()}-${o.rightSideStart.getTime()}-${o.rightSideEnd.getTime()}`)) {
+async function sendResultToThread(result: DropReboundPeriod[], thread: ThreadChannel) {
+
+    const minRightDays = _.min(result.map((o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.rightSideStart), 'days')));
+    const minRights = _.filter(result, (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.rightSideStart), 'days') === minRightDays);
+    const smallestRange = _.minBy(
+        minRights,
+        (o) => moment.utc(o.leftSideEnd).diff(moment.utc(o.leftSideStart), 'days')//find the smallest left side
+    );
+    const ranges = {
+        "SMALLEST_RANGE": smallestRange,
+    } as { [reason: string]: DropReboundPeriod };
+
+    const largestRange = _.maxBy(
+        result,
+        (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.leftSideStart), 'days')//find the largest left side
+    );
+    if(largestRange){
+        ranges["LARGEST_RANGE"] = largestRange;
+    }
+
+
+    for (const reason of Object.keys(ranges)) {
+        const reasonText = ReasonTxtMap[reason];
+        const r = ranges[reason];
+        if (!r) {
+            await thread.send(`No ${reasonText} found`);
+            continue;
+        }
         const leftSideDays = moment.utc(r.leftSideEnd).diff(moment.utc(r.leftSideStart), 'days');
         const rightSideDays = moment.utc(r.rightSideEnd).diff(moment.utc(r.rightSideStart), 'days');
         await thread.send(
-            `${idx} : 
-用咗 **${leftSideDays}**日 由 **${dateFormater(r.leftSideStart)}** 至 **${dateFormater(r.leftSideEnd)}** , 💵**${r.leftSideHighestPrice}** 插到 💵**${r.leftSideLowestPrice}**
-**${rightSideDays}** 日上返 💵**${r.settlementPrice}**`);
-        idx++;
+            `**${reasonText}** : 
+**${leftSideDays}**日 由 **${dateFormater(r.leftSideStart)}** 至 **${dateFormater(r.leftSideEnd)}** , 💵**${r.leftSideHighestPrice}** 插到 💵**${r.leftSideLowestPrice}**
+**${rightSideDays}**日 日上返 💵**${r.settlementPrice}**`);
     }
+
+
 }
