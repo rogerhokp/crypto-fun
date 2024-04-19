@@ -166,8 +166,8 @@ async function sendResultToThread(result: DropReboundPeriod[], thread: ThreadCha
 
     const largestDays = _.max(result.map((o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.leftSideStart), 'days')));
     const largestDaysRanges = _.groupBy(result, (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.leftSideStart), 'days'));
-    console.log('largestDaysRanges', JSON.stringify(largestDaysRanges, null, 2));
-    console.log('largestDays', largestDays);
+    // console.log('largestDaysRanges', JSON.stringify(largestDaysRanges, null, 2));
+    // console.log('largestDays', largestDays);
     const largestRange = _.minBy(
         _.filter(result, (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.leftSideStart), 'days') === largestDays),
         (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.rightSideStart), 'days')//find the smallest left side
