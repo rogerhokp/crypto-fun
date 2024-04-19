@@ -36,6 +36,9 @@ export async function createCommand() {
             .addStringOption(option =>
                 option.setName('date').setDescription('Date (YYYY-MM-DD)').setRequired(false)
             )
+            .addBooleanOption(option =>
+                option.setName('prediction').setDescription('Prediction mode').setRequired(false)
+            ),
             
     ]
         .map(command => command.toJSON());

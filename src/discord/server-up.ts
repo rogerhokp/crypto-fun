@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import cron from 'node-cron';
 import _ from 'lodash';
-import { run as RunerV2, DropReboundPeriod } from '../model-2';
+import { run as modelRun, DropReboundPeriod } from '../model-2';
 import moment from 'moment';
 
 import { Client, GatewayIntentBits, TextChannel, ThreadChannel } from 'discord.js';
@@ -52,6 +52,7 @@ discordClient.on('interactionCreate', async (interaction) => {
         await interaction.reply('Please provide both symbol and window');
         return;
     }
+    const isPrediction = interaction.options.get('prediction')?.value as boolean || false;
 
     try {
         if (!symbol.toUpperCase().includes('USDT')) {
@@ -60,19 +61,19 @@ discordClient.on('interactionCreate', async (interaction) => {
         if (!date) {
             date = moment.utc().format('YYYY-MM-DD');
         }
-        const reuslt = await RunerV2(symbol, maxDayToCheck, date);
+        const reuslt = await modelRun(symbol, maxDayToCheck, date, isPrediction);
         await interaction.reply(`processing ${symbol} with ${maxDayToCheck} days window at ${date}`);
         if (reuslt?.length) {
             const channel = interaction.channel;
 
             const thread = await (channel as TextChannel).threads.create({
-                name: `${symbol} from ${moment.utc(date).subtract(maxDayToCheck, 'd').format('YYYY-MM-DD')} to ${date}`,
+                name: `Evaluation: ${symbol} / ${date} / ${maxDayToCheck}d / ${isPrediction ? 'Prediction' : 'Real'}`,
             })
             await sendResultToThread(reuslt, thread);
 
-            await interaction.editReply(`${symbol} with ${maxDayToCheck} days window at ${date} Found ${reuslt.length} records`);
+            await interaction.editReply(`Evaluation: ${symbol} / ${date} / ${maxDayToCheck}d / ${isPrediction ? 'Prediction' : 'Real'}. Found ${reuslt.length} records`);
         } else {
-            await interaction.editReply(`${symbol} with ${maxDayToCheck} days window at ${date} Found nothing`);
+            await interaction.editReply(`Evaluation: ${symbol} / ${date} / ${maxDayToCheck}d / ${isPrediction ? 'Prediction' : 'Real'}. Found nothing`);
 
         }
     } catch (e) {
@@ -94,19 +95,19 @@ discordClient.login(`${process.env.DISCORD_BOT_TOKEN}`);
 
 
 const cronJobConfig = [
-    // { symbol: 'BTCUSDT', maxDayToCheck: 30 },
-    // { symbol: 'ETHUSDT', maxDayToCheck: 30 },
     { symbol: 'BTCUSDT', maxDayToCheck: 60 },
     { symbol: 'ETHUSDT', maxDayToCheck: 60 },
+    { symbol: 'TIAUSDT', maxDayToCheck: 60 },
+    { symbol: 'BTCUSDT', maxDayToCheck: 60, isPrediction: true },
+    { symbol: 'ETHUSDT', maxDayToCheck: 60, isPrediction: true },
 ]
 //'0 9,12,18,21 * * *'
 //run every 2 min
 
-cron.schedule('0 */1 * * *', () => {
+cron.schedule('0 */3 * * *', () => {
     (async () => {
 
-        console.log('running a task every day at 9am, 12pm and 6pm');
-
+        console.log('Cron job Start');
         const channel = await discordClient.channels.fetch(`${process.env.DISCORD_CRYPTO_CHANNEL_ID}`)
         if (!channel) {
             console.error('Channel not found');
@@ -114,27 +115,31 @@ cron.schedule('0 */1 * * *', () => {
         }
         const textChannel = channel as TextChannel;
 
-        console.log('channel found');
         for (const config of cronJobConfig) {
-
+            const isPrediction = config.isPrediction || false;
             console.log(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment.utc().format('YYYY-MM-DD')}`);
-            const reuslt = await RunerV2(config.symbol, config.maxDayToCheck, moment.utc().format('YYYY-MM-DD'));
+            const reuslt = await modelRun(config.symbol, config.maxDayToCheck, moment.utc().format('YYYY-MM-DD'), isPrediction);
 
             if (reuslt?.length) {
                 //create thread
                 const thread = await textChannel.threads.create({
-                    name: `${config.symbol} from ${moment.utc().subtract(config.maxDayToCheck, 'd').format('YYYY-MM-DD')} to ${moment.utc().format('YYYY-MM-DD')}`,
+                    name: `🔔 ${config.symbol} / ${moment.utc().format('YYYY-MM-DD')} / ${config.maxDayToCheck}d / ${isPrediction ? 'Prediction' : 'Real'}`,
                 })
 
                 sendResultToThread(reuslt, thread);
             } else {
-                await textChannel.send(`${config.symbol} with ${config.maxDayToCheck} days window at ${moment.utc().format('YYYY-MM-DD')} Found nothing`);
+                await textChannel.send(`${config.symbol} / ${moment.utc().format('YYYY-MM-DD')} / ${config.maxDayToCheck}d / ${isPrediction ? 'Prediction' : 'Real'} found nothing`);
             }
             console.log(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment.utc().format('YYYY-MM-DD')} done`);
 
         }
-    })();
 
+
+
+
+
+        console.log('Cron job End');
+    })();
 
 }, {
     scheduled: true,
@@ -147,7 +152,7 @@ const ReasonTxtMap = {
     'LARGEST_RANGE': '最大的v型',
 } as { [reason: string]: string }
 
-async function sendResultToThread(result: DropReboundPeriod[], thread: ThreadChannel) {
+async function sendResultToThread(result: DropReboundPeriod[], thread: ThreadChannel, isPrediction: boolean = false) {
 
     const minRightDays = _.min(result.map((o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.rightSideStart), 'days')));
     const minRights = _.filter(result, (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.rightSideStart), 'days') === minRightDays);
