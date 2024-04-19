@@ -58,7 +58,7 @@ export async function fetchCandlestickData(symbol: string, interval: string, sta
                 lowPrice: Big(lowPrice),
                 closePrice: Big(closePrice),
                 volume: Big(volume),
-                closeTime : new Date(closeTime),
+                closeTime: new Date(closeTime),
                 quoteAssetVolume: Big(quoteAssetVolume),
                 numberOfTrades,
                 takerBuyBaseAssetVolume: Big(takerBuyBaseAssetVolume),
@@ -72,8 +72,8 @@ export async function fetchCandlestickData(symbol: string, interval: string, sta
         throw error;
     }
 }
-//check if cli has arguments --test
-if (process.argv.includes('--test')) {
+//check if cli has arguments --test and run the file
+if (process.argv.includes('--test') && process.argv.includes(__filename)) {
 
     // Example usage
     const symbol = 'ETHUSDT';

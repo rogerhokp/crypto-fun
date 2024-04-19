@@ -24,7 +24,7 @@ export type DropReboundPeriod = {
     leftSideLowestPrice: Big;
     rightSideStart: Date;
     rightSideEnd: Date;
-    rightSideHighestPrice: Big;
+    settlementPrice: Big;
 };
 
 export const run = async (symbol: string, maxDayToCheck: number, settlementDate?: string) => {
@@ -39,14 +39,12 @@ export const run = async (symbol: string, maxDayToCheck: number, settlementDate?
     ];
 
 
-
-    // const now = moment.utc();
-    const settlementMoment = settlementDate ? moment.utc(settlementDate) : moment.utc().utc();
+    const settlementMoment = settlementDate ? moment.utc(settlementDate) : moment.utc();
     if (!settlementMoment.isValid()) {
         throw new Error('Invalid date format');
     }
 
-    console.log(`Settlment Date is ${settlementMoment.format('YYYY-MM-DD HH:mm:ss')}`);
+    console.log(`Settlment Date is ${settlementMoment.format('YYYY-MM-DD')}`);
     const dropReboundPeriods: DropReboundPeriod[] = [];
     for (const target of targets) {
 
@@ -72,11 +70,11 @@ export const run = async (symbol: string, maxDayToCheck: number, settlementDate?
 
             if (rightTrend.direction === 'upward') {
                 // console.log(`Day ${dayToBackward} - ${rightTrend.direction} - ${rightTrend.percentage}%`);
-                const rightSideHighestPrice = _.maxBy(rightCandlesticks, c => c.highPrice);
-
-                if (!rightSideHighestPrice) {
-                    throw new Error('Cannot find the highest price in the right candlesticks.');
+                const rightSideLast = rightCandlesticks[rightCandlesticks.length - 1];;
+                if (!moment.utc(rightSideLast.openTime).isSame(settlementMoment, 'D')) {
+                    throw new Error('Settlement date is not the same as the last candlestick date ‼️');
                 }
+                const settlementPrice = rightSideLast.highPrice;//not close price, ha
 
                 const allLeftCandlesticks = allCandlesticks.slice(0, -dayToBackward);
                 for (const dayToBackwardForLeftCandlesticks of _.range(0, target.maxDayToCheck + 1)) {
@@ -97,11 +95,11 @@ export const run = async (symbol: string, maxDayToCheck: number, settlementDate?
                         if (!leftSideLowestPrice) {
                             throw new Error('Cannot find the lowest price in the left candlesticks.');
                         }
-                        if (rightSideHighestPrice.highPrice > leftSideHighestPrice.highPrice) {
+                        if (settlementPrice.gte(leftSideHighestPrice.highPrice)) {
                             console.log('------------------------------------')
                             console.log(`Found Drop period from ${moment.utc(leftCandlesticks[0].openTime).format('YYYY-MM-DD')} to ${moment.utc(leftCandlesticks[leftCandlesticks.length - 1].openTime).format('YYYY-MM-DD')}`);
-                            console.log(`Found Rebound period from ${moment.utc(rightCandlesticks[0].openTime).format('YYYY-MM-DD')} to ${moment.utc(rightCandlesticks[rightCandlesticks.length - 1].openTime).format('YYYY-MM-DD')}`);
-                            console.log(`Found ${target.symbol} at ${rightSideHighestPrice.highPrice}@${moment.utc(rightSideHighestPrice.openTime).format('YYYY-MM-DD')} 📈 ${leftSideHighestPrice.highPrice}@${moment.utc(leftSideHighestPrice.openTime).format('YYYY-MM-DD')}`);
+                            console.log(`Found Rebound period from ${moment.utc(rightCandlesticks[0].openTime).format('YYYY-MM-DD')} to ${moment.utc(rightSideLast.openTime).format('YYYY-MM-DD')}`);
+                            console.log(`Found ${target.symbol} at ${settlementPrice}@${moment.utc(rightSideLast.openTime).format('YYYY-MM-DD')} 📈 ${leftSideHighestPrice.highPrice}@${moment.utc(leftSideHighestPrice.openTime).format('YYYY-MM-DD')}`);
 
 
 
@@ -111,10 +109,9 @@ export const run = async (symbol: string, maxDayToCheck: number, settlementDate?
                                 leftSideHighestPrice: leftSideHighestPrice.highPrice,
                                 leftSideLowestPrice: leftSideLowestPrice.lowPrice,
                                 rightSideStart: rightCandlesticks[0].openTime,
-                                rightSideEnd: rightCandlesticks[rightCandlesticks.length - 1].openTime,
-                                rightSideHighestPrice: rightSideHighestPrice.highPrice,
+                                rightSideEnd: rightSideLast.openTime,
+                                settlementPrice,
                             });
-                            console.log('Type generated successfully.');
                         }
                     }
                 }
@@ -130,9 +127,9 @@ export const run = async (symbol: string, maxDayToCheck: number, settlementDate?
     return dropReboundPeriods;
 };
 //check if cli has arguments --test
-if (process.argv.includes('--test')) {
+if (process.argv.includes('--test') && process.argv.includes(__filename)) {
     (async () => {
-        const result = await run('ETHUSDT', 60, new Date().toISOString());
+        const result = await run('ETHUSDT', 60, new Date('2024-04-08').toISOString());
         console.log(result);
     })();
 }

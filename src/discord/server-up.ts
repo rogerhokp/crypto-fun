@@ -58,7 +58,7 @@ discordClient.on('interactionCreate', async (interaction) => {
             symbol = symbol + 'USDT';
         }
         if (!date) {
-            date = moment().format('YYYY-MM-DD');
+            date = moment.utc().format('YYYY-MM-DD');
         }
         const reuslt = await RunerV2(symbol, maxDayToCheck, date);
         await interaction.reply(`processing ${symbol} with ${maxDayToCheck} days window at ${date}`);
@@ -66,12 +66,12 @@ discordClient.on('interactionCreate', async (interaction) => {
             const channel = interaction.channel;
 
             const thread = await (channel as TextChannel).threads.create({
-                name: `${symbol} from ${moment(date).subtract(maxDayToCheck, 'd').format('YYYY-MM-DD')} to ${date}`,
+                name: `${symbol} from ${moment.utc(date).subtract(maxDayToCheck, 'd').format('YYYY-MM-DD')} to ${date}`,
             })
 
-            const smallestRight = _.minBy(reuslt, (o) => moment(o.rightSideEnd).diff(moment(o.rightSideStart), 'days'));
-            const largestLeft = _.maxBy(reuslt, (o) => moment(o.leftSideEnd).diff(moment(o.leftSideStart), 'days'));
-            const largestRange = _.maxBy(reuslt, (o) => moment(o.rightSideEnd).diff(moment(o.leftSideStart), 'days'));
+            const smallestRight = _.minBy(reuslt, (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.rightSideStart), 'days'));
+            const largestLeft = _.maxBy(reuslt, (o) => moment.utc(o.leftSideEnd).diff(moment.utc(o.leftSideStart), 'days'));
+            const largestRange = _.maxBy(reuslt, (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.leftSideStart), 'days'));
             if (!largestLeft || !smallestRight || !largestRange) {
                 await interaction.editReply(`Error in finding smallestRight or largestLeft`);
                 return;
@@ -95,7 +95,7 @@ discordClient.on('interactionCreate', async (interaction) => {
 
 
 const dateFormater = (date: Date) => {
-    return moment(date).format('YYYY-MM-DD');
+    return moment.utc(date).format('YYYY-MM-DD');
 }
 
 // Make the client login
@@ -126,18 +126,18 @@ cron.schedule('0 */1 * * *', () => {
         console.log('channel found');
         for (const config of cronJobConfig) {
 
-            console.log(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment().format('YYYY-MM-DD')}`);
+            console.log(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment.utc().format('YYYY-MM-DD')}`);
             const reuslt = await RunerV2(config.symbol, config.maxDayToCheck);
 
             if (reuslt?.length) {
                 //create thread
                 const thread = await textChannel.threads.create({
-                    name: `${config.symbol} from ${moment().subtract(config.maxDayToCheck, 'd').format('YYYY-MM-DD')} to ${moment().format('YYYY-MM-DD')}`,
+                    name: `${config.symbol} from ${moment.utc().subtract(config.maxDayToCheck, 'd').format('YYYY-MM-DD')} to ${moment.utc().format('YYYY-MM-DD')}`,
                 })
 
-                const smallestRight = _.minBy(reuslt, (o) => moment(o.rightSideEnd).diff(moment(o.rightSideStart), 'days'));
-                const largestLeft = _.maxBy(reuslt, (o) => moment(o.leftSideEnd).diff(moment(o.leftSideStart), 'days'));
-                const largestRange = _.maxBy(reuslt, (o) => moment(o.rightSideEnd).diff(moment(o.leftSideStart), 'days'));
+                const smallestRight = _.minBy(reuslt, (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.rightSideStart), 'days'));
+                const largestLeft = _.maxBy(reuslt, (o) => moment.utc(o.leftSideEnd).diff(moment.utc(o.leftSideStart), 'days'));
+                const largestRange = _.maxBy(reuslt, (o) => moment.utc(o.rightSideEnd).diff(moment.utc(o.leftSideStart), 'days'));
                 if (!largestLeft || !smallestRight || !largestRange) {
                     await textChannel.send(`Error in finding smallestRight or largestLeft`);
                     return;
@@ -146,9 +146,9 @@ cron.schedule('0 */1 * * *', () => {
 
                 sendResultToThread([smallestRight, largestLeft, largestRange], thread);
             } else {
-                await textChannel.send(`${config.symbol} with ${config.maxDayToCheck} days window at ${moment().format('YYYY-MM-DD')} Found nothing`);
+                await textChannel.send(`${config.symbol} with ${config.maxDayToCheck} days window at ${moment.utc().format('YYYY-MM-DD')} Found nothing`);
             }
-            console.log(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment().format('YYYY-MM-DD')} done`);
+            console.log(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment.utc().format('YYYY-MM-DD')} done`);
 
         }
     })();
@@ -164,15 +164,12 @@ async function sendResultToThread(reuslt: DropReboundPeriod[], thread: ThreadCha
     let idx = 1;
 
     for (const r of _.uniqBy(reuslt, (o) => `${o.leftSideStart.getTime()}-${o.leftSideEnd.getTime()}-${o.rightSideStart.getTime()}-${o.rightSideEnd.getTime()}`)) {
-        const leftSideDays = moment(r.leftSideEnd).diff(moment(r.leftSideStart), 'days');
-        const rightSideDays = moment(r.rightSideEnd).diff(moment(r.rightSideStart), 'days');
+        const leftSideDays = moment.utc(r.leftSideEnd).diff(moment.utc(r.leftSideStart), 'days');
+        const rightSideDays = moment.utc(r.rightSideEnd).diff(moment.utc(r.rightSideStart), 'days');
         await thread.send(
             `${idx} : 
-** ${dateFormater(r.leftSideStart)
-            }** 至 ** ${dateFormater(r.leftSideEnd)}** （${leftSideDays}) 天
-    💵** ${r.leftSideHighestPrice}** 跌到 💵** ${r.leftSideLowestPrice}**
-    之反彈到 ** ${dateFormater(r.rightSideEnd)}** 💵** ${r.rightSideHighestPrice}** (${rightSideDays}) 天
-        `);
+用咗 **${leftSideDays}**日 由 **${dateFormater(r.leftSideStart)}** 至 **${dateFormater(r.leftSideEnd)}** , 💵**${r.leftSideHighestPrice}** 插到 💵**${r.leftSideLowestPrice}**
+**${rightSideDays}** 日上返 💵**${r.settlementPrice}**`);
         idx++;
     }
 }
