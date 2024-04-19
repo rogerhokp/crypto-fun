@@ -118,7 +118,7 @@ cron.schedule('0 */1 * * *', () => {
         for (const config of cronJobConfig) {
 
             console.log(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment.utc().format('YYYY-MM-DD')}`);
-            const reuslt = await RunerV2(config.symbol, config.maxDayToCheck);
+            const reuslt = await RunerV2(config.symbol, config.maxDayToCheck, moment.utc().format('YYYY-MM-DD'));
 
             if (reuslt?.length) {
                 //create thread
