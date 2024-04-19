@@ -27,7 +27,7 @@ export type DropReboundPeriod = {
     rightSideHighestPrice: Big;
 };
 
-export const run = async (symbol: string, maxDayToCheck: number, date?: string) => {
+export const run = async (symbol: string, maxDayToCheck: number, settlementDate?: string) => {
     const targets = [
         {
             symbol: symbol.toLocaleUpperCase(),
@@ -40,18 +40,21 @@ export const run = async (symbol: string, maxDayToCheck: number, date?: string) 
 
 
 
-    // const now = moment();
-    const now = date ? moment(date) : moment();
-    if (!now.isValid()) {
+    // const now = moment.utc();
+    const settlementMoment = settlementDate ? moment.utc(settlementDate) : moment.utc().utc();
+    if (!settlementMoment.isValid()) {
         throw new Error('Invalid date format');
     }
 
-    console.log(`Now is ${now.format('YYYY-MM-DD HH:mm:ss')}`);
+    console.log(`Settlment Date is ${settlementMoment.format('YYYY-MM-DD HH:mm:ss')}`);
     const dropReboundPeriods: DropReboundPeriod[] = [];
     for (const target of targets) {
 
         console.log(`Analyzing ${target.symbol}...`);
-        const allCandlesticks = await fetchCandlestickData(target.symbol, '1d', now.clone().subtract(target.maxDayToCheck, 'd').toDate().getTime(), now.clone().add(1, 'd').toDate().getTime());
+        const allCandlesticks = await fetchCandlestickData(
+            target.symbol, '1d', settlementMoment.clone().subtract(target.maxDayToCheck, 'd').toDate().getTime(),
+            settlementMoment.clone().toDate().getTime()
+        );
         if (allCandlesticks.length === 0) {
             console.log(`No data found for ${target.symbol}`);
             return;
@@ -96,9 +99,9 @@ export const run = async (symbol: string, maxDayToCheck: number, date?: string) 
                         }
                         if (rightSideHighestPrice.highPrice > leftSideHighestPrice.highPrice) {
                             console.log('------------------------------------')
-                            console.log(`Found Drop period from ${moment(leftCandlesticks[0].openTime).format('YYYY-MM-DD')} to ${moment(leftCandlesticks[leftCandlesticks.length - 1].openTime).format('YYYY-MM-DD')}`);
-                            console.log(`Found Rebound period from ${moment(rightCandlesticks[0].openTime).format('YYYY-MM-DD')} to ${moment(rightCandlesticks[rightCandlesticks.length - 1].openTime).format('YYYY-MM-DD')}`);
-                            console.log(`Found ${target.symbol} at ${rightSideHighestPrice.highPrice}@${moment(rightSideHighestPrice.openTime).format('YYYY-MM-DD')} 📈 ${leftSideHighestPrice.highPrice}@${moment(leftSideHighestPrice.openTime).format('YYYY-MM-DD')}`);
+                            console.log(`Found Drop period from ${moment.utc(leftCandlesticks[0].openTime).format('YYYY-MM-DD')} to ${moment.utc(leftCandlesticks[leftCandlesticks.length - 1].openTime).format('YYYY-MM-DD')}`);
+                            console.log(`Found Rebound period from ${moment.utc(rightCandlesticks[0].openTime).format('YYYY-MM-DD')} to ${moment.utc(rightCandlesticks[rightCandlesticks.length - 1].openTime).format('YYYY-MM-DD')}`);
+                            console.log(`Found ${target.symbol} at ${rightSideHighestPrice.highPrice}@${moment.utc(rightSideHighestPrice.openTime).format('YYYY-MM-DD')} 📈 ${leftSideHighestPrice.highPrice}@${moment.utc(leftSideHighestPrice.openTime).format('YYYY-MM-DD')}`);
 
 
 
@@ -126,5 +129,13 @@ export const run = async (symbol: string, maxDayToCheck: number, date?: string) 
     }
     return dropReboundPeriods;
 };
+//check if cli has arguments --test
+if (process.argv.includes('--test')) {
+    (async () => {
+        const result = await run('ETHUSDT', 60, new Date().toISOString());
+        console.log(result);
+    })();
+}
+
 
 

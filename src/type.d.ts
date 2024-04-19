@@ -5,7 +5,7 @@ export type Candlestick = {
     lowPrice: Big;
     closePrice: Big;
     volume: Big;
-    closeTime: number;
+    closeTime: Date;
     quoteAssetVolume: Big;
     numberOfTrades: number;
     takerBuyBaseAssetVolume: Big;

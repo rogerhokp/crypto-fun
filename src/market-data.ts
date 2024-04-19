@@ -58,7 +58,7 @@ export async function fetchCandlestickData(symbol: string, interval: string, sta
                 lowPrice: Big(lowPrice),
                 closePrice: Big(closePrice),
                 volume: Big(volume),
-                closeTime,
+                closeTime : new Date(closeTime),
                 quoteAssetVolume: Big(quoteAssetVolume),
                 numberOfTrades,
                 takerBuyBaseAssetVolume: Big(takerBuyBaseAssetVolume),
@@ -72,11 +72,33 @@ export async function fetchCandlestickData(symbol: string, interval: string, sta
         throw error;
     }
 }
+//check if cli has arguments --test
+if (process.argv.includes('--test')) {
 
-// // Example usage
-// const symbol = 'BTCUSDT';
-// const interval = '1d'; // Daily intervals. You can change this to '1h' for hourly data, etc.
-// const startTime = new Date('2023-01-01').getTime(); // Start date
-// const endTime = new Date('2023-01-07').getTime(); // End date
+    // Example usage
+    const symbol = 'ETHUSDT';
+    const interval = '1d'; // Daily intervals. You can change this to '1h' for hourly data, etc.
+    const startTime = new Date('2024-04-15').getTime(); // Start date
+    const endTime = new Date('2024-04-16').getTime(); // End date
 
-// fetchCandlestickData(symbol, interval, startTime, endTime);
+
+    (async () => {
+        try {
+            const candlestickData = await fetchCandlestickData(symbol, interval, startTime, endTime);
+            console.log(candlestickData.map(candlestick => ({
+                ...candlestick,
+                openPrice: candlestick.openPrice.toFixed(2),
+                highPrice: candlestick.highPrice.toFixed(2),
+                lowPrice: candlestick.lowPrice.toFixed(2),
+                closePrice: candlestick.closePrice.toFixed(2),
+                volume: candlestick.volume.toFixed(2),
+                quoteAssetVolume: candlestick.quoteAssetVolume.toFixed(2),
+                takerBuyBaseAssetVolume: candlestick.takerBuyBaseAssetVolume.toFixed(2),
+                takerBuyQuoteAssetVolume: candlestick.takerBuyQuoteAssetVolume.toFixed(2)
+            })));
+        } catch (error) {
+            console.error('Error fetching candlestick data:', error);
+        }
+    })();
+
+}
