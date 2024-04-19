@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import cron from 'node-cron';
 import _ from 'lodash';
-import { run as RunerV2, DropReboundPeriod } from '../runner-v2';
+import { run as RunerV2, DropReboundPeriod } from '../model-2';
 import moment from 'moment';
 
 import { Client, GatewayIntentBits, TextChannel, ThreadChannel } from 'discord.js';
