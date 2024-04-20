@@ -104,7 +104,7 @@ const cronJobConfig = [
 //'0 9,12,18,21 * * *'
 //run every 2 min
 
-cron.schedule('0 */3 * * *', () => {
+cron.schedule('0 */1 * * *', () => {
     (async () => {
 
         console.log('Cron job Start');
