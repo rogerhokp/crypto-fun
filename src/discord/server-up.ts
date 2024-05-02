@@ -118,19 +118,26 @@ cron.schedule('0 */1 * * *', () => {
         for (const config of cronJobConfig) {
             const isPrediction = config.isPrediction || false;
             console.log(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment.utc().format('YYYY-MM-DD')}`);
-            const reuslt = await modelRun(config.symbol, config.maxDayToCheck, moment.utc().format('YYYY-MM-DD'), isPrediction);
+            try {
+                const reuslt = await modelRun(config.symbol, config.maxDayToCheck, moment.utc().format('YYYY-MM-DD'), isPrediction);
 
-            if (reuslt?.length) {
-                //create thread
-                const thread = await textChannel.threads.create({
-                    name: `🔔 ${config.symbol} / ${moment.utc().format('YYYY-MM-DD')} / ${config.maxDayToCheck}d / ${isPrediction ? 'Prediction' : 'Real'}`,
-                })
+                if (reuslt?.length) {
+                    //create thread
+                    const thread = await textChannel.threads.create({
+                        name: `🔔 ${config.symbol} / ${moment.utc().format('YYYY-MM-DD')} / ${config.maxDayToCheck}d / ${isPrediction ? 'Prediction' : 'Real'}`,
+                    })
 
-                sendResultToThread(reuslt, thread);
-            } else {
-                await textChannel.send(`${config.symbol} / ${moment.utc().format('YYYY-MM-DD')} / ${config.maxDayToCheck}d / ${isPrediction ? 'Prediction' : 'Real'} found nothing`);
+                    sendResultToThread(reuslt, thread);
+                } else {
+                    await textChannel.send(`${config.symbol} / ${moment.utc().format('YYYY-MM-DD')} / ${config.maxDayToCheck}d / ${isPrediction ? 'Prediction' : 'Real'} found nothing`);
+                }
+                console.log(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment.utc().format('YYYY-MM-DD')} done`);
+            } catch (e: any) {
+                console.error(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment.utc().format('YYYY-MM-DD')} error`, e);
+                await textChannel.send(`An error occurred : ${e.message}`);
             }
-            console.log(`processing ${config.symbol} with ${config.maxDayToCheck} days window at ${moment.utc().format('YYYY-MM-DD')} done`);
+
+
 
         }
 
